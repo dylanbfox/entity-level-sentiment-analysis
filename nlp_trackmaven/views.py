@@ -8,24 +8,28 @@ from nlp.sentiment import get_subject_phrase_sentiments
 
 from flask import render_template
 from flask import jsonify
+from flask import request
 
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def hello_world():
-	raw = "The speaker was great but the video in the beginning was terrible."
-	sents = tokenize_sents(raw)
-	tokenized_sents = tokenize_words(sents)
-	normalized_sents = replace_repeaters(tokenized_sents)
+	if request.method == 'POST':	
+		raw = request.form["raw"]
+		sents = tokenize_sents(raw)
+		tokenized_sents = tokenize_words(sents)
+		normalized_sents = replace_repeaters(tokenized_sents)
 
-	pos_tagger = PosBackoffTagger()
-	tagged_sents = [pos_tagger.tag(sent) for sent in normalized_sents]
+		pos_tagger = PosBackoffTagger()
+		tagged_sents = [pos_tagger.tag(sent) for sent in normalized_sents]
 
-	chunker = RegexpChunker()
-	trees = [chunker.create_chunks(sent) for sent in tagged_sents]
-	sents_leaves = chunker.traverse_trees(trees)
-	subjects = create_subjects(sents_leaves)
+		chunker = RegexpChunker()
+		trees = [chunker.create_chunks(sent) for sent in tagged_sents]
+		sents_leaves = chunker.traverse_trees(trees)
+		subjects = create_subjects(sents_leaves)
 
-	extractor = PhraseExtractor()
-	phrases = extractor.extract_phrases(tagged_sents, subjects)
-	result = get_subject_phrase_sentiments(subjects, phrases)
+		extractor = PhraseExtractor()
+		phrases = extractor.extract_phrases(tagged_sents, subjects)
+		result = get_subject_phrase_sentiments(subjects, phrases)
 
-	return jsonify(**result)
+		return jsonify(**result)
+	else:
+		return render_template('home.html')
